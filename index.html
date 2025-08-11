@@ -1,1 +1,129 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Jumanji FL – Interactivo (v2)</title>
+<style>
+:root{
+  --do:#e53935; --crime:#1e88e5; --cyber:#f57c00; --rc:#8e24aa;
+  --inter:#ef4444; --azar:#fdd835; --bg:#0f172a; --panel:#111826;
+  --text:#e5e7eb; --muted:#9ca3af; --ok:#10b981; --err:#ef4444; --btn:#2563eb;
+}
+*{box-sizing:border-box} body{margin:0;background:linear-gradient(135deg,#0b1221,#0f172a);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
+.wrapper{max-width:1200px;margin:24px auto;padding:16px}
+h1{margin:0 0 6px} .sub{color:var(--muted);margin-bottom:16px}
+.panel{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+button{background:var(--btn);color:#fff;border:0;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}
+input,select{background:#0b1221;border:1px solid rgba(255,255,255,.12);color:var(--text);padding:8px 10px;border-radius:8px}
+.badge{display:inline-flex;gap:6px;align-items:center;background:#1f2937;color:#fff;padding:6px 10px;border-radius:999px;font-weight:700}
+.dot{width:12px;height:12px;border-radius:50%}
+.grid{display:grid;grid-template-columns:repeat(26,1fr);gap:6px;padding:12px}
+.trackTitle{grid-column:1/-1;color:var(--muted);font-weight:800;margin:6px 0}
+.cell{aspect-ratio:1/1;border-radius:10px;border:1px solid rgba(255,255,255,.08);display:flex;justify-content:center;align-items:center;position:relative;font-weight:700;font-size:12px}
+.cell small{opacity:.85}
+.cell.do{background:linear-gradient(180deg,rgba(229,57,53,.22),rgba(229,57,53,.08))}
+.cell.crime{background:linear-gradient(180deg,rgba(30,136,229,.22),rgba(30,136,229,.08))}
+.cell.cyber{background:linear-gradient(180deg,rgba(245,124,0,.22),rgba(245,124,0,.08))}
+.cell.rc{background:linear-gradient(180deg,rgba(142,36,170,.22),rgba(142,36,170,.08))}
+.cell.case{outline:2px solid rgba(255,255,255,.14)}
+.cell.azar{outline:2px dashed var(--azar)}
+.cell.inter{outline:2px dashed var(--inter)}
+.cell.preview{box-shadow:inset 0 0 0 3px rgba(255,255,255,.35)}
+.token{position:absolute;bottom:4px;right:4px;width:18px;height:18px;border-radius:50%;border:2px solid rgba(0,0,0,.35)}
+.tA{background:#22c55e}.tB{background:#60a5fa}.tC{background:#f59e0b}.tD{background:#ef4444}
+hr{border:none;border-top:1px solid rgba(255,255,255,.08);margin:10px 0}
+.small{color:var(--muted);font-size:12px}
+.modal{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.6);padding:16px;z-index:50}
+.modalInner{width:min(840px,96vw);background:var(--panel);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:16px}
+.qHeader{display:flex;justify-content:space-between;align-items:center}
+.opts{display:grid;gap:8px;margin:10px 0}
+.optBtn{background:#1f2937;border:1px solid rgba(255,255,255,.1);padding:10px;border-radius:10px;text-align:left}
+.optBtn.correct{outline:2px solid var(--ok)} .optBtn.wrong{outline:2px solid var(--err)}
+.timer{background:#1f2937;color:#fff;padding:6px 10px;border-radius:999px;font-variant-numeric:tabular-nums}
+.feedback{color:var(--muted);margin-top:4px}
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <h1>Jumanji FL · Interactivo</h1>
+  <div class="sub">4 caminos · D&amp;O · Crime · Cyber · RC Profesional · con casos, azar e intersecciones.</div>
 
+  <!-- Controles -->
+  <div class="panel">
+    <div class="row">
+      <button id="btnRoll">🎲 Tirar dado</button>
+      <span class="badge">Número: <strong id="rollNum">-</strong></span>
+      <button id="btnOpenQ" disabled>📜 Abrir pregunta</button>
+      <button id="btnResolve" disabled>✅ Aplicar resultado</button>
+      <button id="btnNext" disabled>➡️ Terminar turno</button>
+      <button id="btnExport">⬇️ Exportar CSV</button>
+      <span class="small">Turno de: <b id="turnTeam">Equipo A</b></span>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label>Timer (s) <input id="inTimer" type="number" value="45" min="10" max="120" style="width:80px"></label>
+      <label>Equipo A <input id="nameA" value="Equipo A" style="width:140px"></label>
+      <label>Equipo B <input id="nameB" value="Equipo B" style="width:140px"></label>
+      <label>Equipo C <input id="nameC" value="Equipo C" style="width:140px"></label>
+      <label>Equipo D <input id="nameD" value="Equipo D" style="width:140px"></label>
+      <button id="btnApplyNames">Aplicar nombres</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <span class="badge"><span class="dot" style="background:#22c55e"></span><b id="bA">Equipo A</b>: <span id="scA">0</span></span>
+      <span class="badge"><span class="dot" style="background:#60a5fa"></span><b id="bB">Equipo B</b>: <span id="scB">0</span></span>
+      <span class="badge"><span class="dot" style="background:#f59e0b"></span><b id="bC">Equipo C</b>: <span id="scC">0</span></span>
+      <span class="badge"><span class="dot" style="background:#ef4444"></span><b id="bD">Equipo D</b>: <span id="scD">0</span></span>
+      <span class="small">Posiciones (por camino actual): A:<span id="posA">1</span> B:<span id="posB">1</span> C:<span id="posC">1</span> D:<span id="posD">1</span></span>
+    </div>
+  </div>
+
+  <!-- Leyenda -->
+  <div class="panel row" style="margin-top:12px">
+    <span class="badge"><span class="dot" style="background:var(--do)"></span>D&amp;O</span>
+    <span class="badge"><span class="dot" style="background:var(--crime)"></span>Crime</span>
+    <span class="badge"><span class="dot" style="background:var(--cyber)"></span>Cyber</span>
+    <span class="badge"><span class="dot" style="background:var(--rc)"></span>RC Profesional</span>
+    <span class="badge"><span class="dot" style="background:var(--inter)"></span>Intersección</span>
+    <span class="badge"><span class="dot" style="background:var(--azar)"></span>Azar</span>
+    <span class="small">Casos en 3 y 12 · Azar en 5, 14, 22 · Intersecciones en 9, 17, 23</span>
+  </div>
+
+  <!-- Tablero -->
+  <div id="board" class="panel grid"></div>
+</div>
+
+<!-- Modal Pregunta -->
+<div id="modal" class="modal">
+  <div class="modalInner">
+    <div class="qHeader">
+      <h3 id="qTitle">Pregunta</h3>
+      <div class="row">
+        <span class="badge">Responder por: 
+          <select id="selProd"></select>
+        </span>
+        <span class="timer" id="timer">--</span>
+        <button id="closeModal">Cerrar</button>
+      </div>
+    </div>
+    <div class="small" id="qMeta"></div>
+    <hr/>
+    <div id="qText"></div>
+    <div class="opts">
+      <button class="optBtn" id="optA"></button>
+      <button class="optBtn" id="optB"></button>
+      <button class="optBtn" id="optC"></button>
+    </div>
+    <div class="feedback" id="qFb"></div>
+    <div class="small" id="postRule"></div>
+  </div>
+</div>
+
+<script>
+/* ======= BANCO DE PREGUNTAS (60) ======= */
+const mk=(Producto,Categoria,Pregunta,A,B,C,Resp,Fb)=>({Producto,Categoria,Pregunta,A,B,C,Resp,Fb});
+const bank=[ ... ];
+</script>
+</body>
+</html>
